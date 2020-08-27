@@ -129,7 +129,75 @@ saver.restore(sess,"./Model/model.ckpt")
 
 tf.train.Saver支持在加载的时候对变量进行重命名，这样可以非常方便的使用滑动平均值。
 
+```python
+import tensorflow as tf
+tf.compat.v1.disable_eager_execution()
+
+v = tf.Variable(0, dtype=tf.float32, name="v")
+for variables in tf.compat.v1.global_variables():
+    print(variables.name)  # v:0
+
+ema = tf.train.ExponentialMovingAverage(0.99)
+maintain_averages_op = ema.apply(tf.compat.v1.global_variables())
+for variables in tf.compat.v1.global_variables():
+    print(variables.name)  # v:0
+    # v/ExponentialMovingAverage:0
+
+saver = tf.compat.v1.train.Saver()
+
+with tf.compat.v1.Session() as sess:
+    sess.run(tf.compat.v1.global_variables_initializer())
+    sess.run(tf.compat.v1.assign(v, 10))
+    print(sess.run([v, ema.average(v)]))
+    sess.run(maintain_averages_op)
+    saver.save(sess, "Model/model_ema.ckpt")
+    print(sess.run([v, ema.average(v)]))  # [10.0, 0.099999905]
+
+#v:0
+#v:0
+#v/ExponentialMovingAverage:0
+#[10.0, 0.0]
+#[10.0, 0.099999905]
+```
+
+如代码所示，调用**ema.apply()**之后会生成shadow variable对应的变量。apply方法接受一个var_list作为参数，对var_list中的每个元素都会创建他们对应的shadow variable，并以variable的实际值初始化shadow variable。并且他们会被添加到collection：GraphKeys.MOVING_AVERAGE_VARIABLES。
+
+```python
+# Create variables.
+var0 = tf.Variable(...)
+var1 = tf.Variable(...)
+# ... use the variables to build a training model...
+...
+# Create an op that applies the optimizer.  This is what we usually
+# would use as a training op.
+opt_op = opt.minimize(my_loss, [var0, var1])
+
+# Create an ExponentialMovingAverage object
+ema = tf.train.ExponentialMovingAverage(decay=0.9999)
+
+with tf.control_dependencies([opt_op]):
+    # Create the shadow variables, and add ops to maintain moving averages
+    # of var0 and var1. This also creates an op that will update the moving
+    # averages after each training step.  This is what we will use in place
+    # of the usual training op.
+    training_op = ema.apply([var0, var1])
+
+...train the model by running training_op...
+
+# Create a Saver that loads variables from their saved shadow values.
+shadow_var0_name = ema.average_name(var0)
+shadow_var1_name = ema.average_name(var1)
+saver = tf.compat.v1.train.Saver({shadow_var0_name: var0, shadow_var1_name:
+var1})
+saver.restore(...checkpoint filename...)
+# var0 and var1 now hold the moving average values
+```
+- average()与average_name()方法可以让我们非常方便的获取shadow variable以及他们的名字
+- 代码中，从checkpoint恢复参数var0与var1时，**我们使用他们对应的滑动平均shadow variable用于恢复（重命名）**，然后导出模型文件用于部署或者评估。
+
 [相关参考](./trainSaver/test.py)
+
+### 滑动平均
 
 ### collection机制
 
@@ -192,7 +260,7 @@ with tf.variable_scope(name='loss') as scope:
 
 ### Tensorflow加载多个模型
 
-[加载单模型](./LoadOneModel.py)
+[加载单模型](LoadModel/LoadOneModel.py)
 
 有几个注意点
 
@@ -201,7 +269,7 @@ with tf.variable_scope(name='loss') as scope:
 
     这样是为了方便在加载模型的时候方便的使用指定的一些权重参数，如果不命名的话，这些变量会自动命名为类似“Placeholder_1”的名字
     
-[加载多模型](./LoadMultiModel.py)
+[加载多模型](LoadModel/LoadMultiModel.py)
 
 当使用一个session进行加载时，这个会话有自己默认的计算图。如果将所有模型的变量都加载到当前的计算图中，可能会产生冲突。所以当我们使用会话的时候，可以通过**tf.Session(graph=MyGraph)**来指定采用不同的已经创建好的计算图。因此，如果需要加载多个模型，需要将他们加载到不同的图，然后用不同的会话使用它们。
 
