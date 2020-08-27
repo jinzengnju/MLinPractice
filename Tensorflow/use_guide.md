@@ -127,6 +127,10 @@ saver =tf.train.import_meta_graph("Model/model.ckpt.meta")
 saver.restore(sess,"./Model/model.ckpt")
 ```
 
+tf.train.Saver支持在加载的时候对变量进行重命名，这样可以非常方便的使用滑动平均值。
+
+[相关参考](./trainSaver/test.py)
+
 ### collection机制
 
 tensorflow的collection提供了一个全局的存储机制，不会受到变量名生存空间的影响。一处保存，到处可取。
@@ -188,5 +192,16 @@ with tf.variable_scope(name='loss') as scope:
 
 ### Tensorflow加载多个模型
 
+[加载单模型](./LoadOneModel.py)
+
+有几个注意点
+
+- 模型输出Tensor被加到“activation”的集合中
+- **在定义变量或者运算时，最好对它们进行命名**
+
+    这样是为了方便在加载模型的时候方便的使用指定的一些权重参数，如果不命名的话，这些变量会自动命名为类似“Placeholder_1”的名字
+    
 [加载多模型](./LoadMultiModel.py)
+
+当使用一个session进行加载时，这个会话有自己默认的计算图。如果将所有模型的变量都加载到当前的计算图中，可能会产生冲突。所以当我们使用会话的时候，可以通过**tf.Session(graph=MyGraph)**来指定采用不同的已经创建好的计算图。因此，如果需要加载多个模型，需要将他们加载到不同的图，然后用不同的会话使用它们。
 
