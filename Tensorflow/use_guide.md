@@ -127,3 +127,64 @@ saver =tf.train.import_meta_graph("Model/model.ckpt.meta")
 saver.restore(sess,"./Model/model.ckpt")
 ```
 
+### collection机制
+
+tensorflow的collection提供了一个全局的存储机制，不会受到变量名生存空间的影响。一处保存，到处可取。
+```python
+#向collection中存数据
+tf.Graph.add_to_collection(name, value)
+
+import tensorflow as tf
+tf.reset_default_graph()
+
+w1 = tf.get_variable('w1', shape=[4], dtype=tf.float32, initializer=tf.truncated_normal_initializer(stddev=0.1))
+w2 = tf.get_variable('w2', shape=[4], dtype=tf.float32, initializer=tf.constant_initializer(0.1))
+tf.add_to_collection('w', w1)
+tf.add_to_collection('w', w2)
+get_w = tf.get_collection('w')
+add_w = tf.add_n(get_w)
+init_op = tf.global_variables_initializer()
+with tf.Session() as sess:
+    sess.run(init_op)
+    print("生成数据的样结果：")
+    print(sess.run(w1))
+    print(sess.run(w2))
+    print("放入集合w数据的结果：")
+    print(sess.run(get_w))
+    print("集合w中的数据相加的记过")
+    print(sess.run(add_w))
+
+#生成数据的样结果：
+#[ 0.00524002  0.0679507  -0.0160088  -0.04484038]
+#[0.1 0.1 0.1 0.1]
+#放入集合w数据的结果：
+#[array([ 0.00524002,  0.0679507 , -0.0160088 , -0.04484038], dtype=float32), array([0.1, 0.1, 0.1, 0.1], dtype=float32)]
+#集合w中的数据相加的结果：
+#[0.10524002 0.16795069 0.0839912  0.05515962]
+
+```
+从以上可以看出，在从集合中取变量的时候，直接通过**w**就能将变量w1和w2取出，而我们不用关心这两个变量在定义的时候具体是什么名字。
+
+tf自己也维护一些collection，就像我们定义的所有summary op都会保存在name=tf.GraphKeys.SUMMARIES。这样，tf.get_collection(tf.GraphKeys.SUMMARIES)就会返回所有定义的summary op；tf.Optimizer子类默认优化在tf.GraphKeys.TRAINABLE_VARIABLES下收集的变量，但是也可以传递显式的变量列表。
+
+collection的妙用：计算各个层的正则化损失
+```python
+import tensorflow as tf
+w = tf.get_variable('weight', dtype=tf.float32,initializer=tf.contrib.layers.xavier_initializer())
+tf.add_to_collection('regularizer', tf.contrib.layers.l2_regularizer(regular_num=0.001)(w))
+
+shared = tf.nn.conv2d(input, w, [1, stride, stride, 1], padding=padding)
+
+b = tf.get_variable('bias', [out_dim], 'float32', initializer=tf.constant_initializer(0.))
+tf.add_to_collection('regularizer', tf.contrib.layers.l2_regularizer(regular_num=0.001)(b))
+
+out = tf.nn.bias_add(shared, b)
+regular = tf.add_n(tf.get_collection('regularizer'), 'loss') 
+# tf.add_n(inputs,name)
+with tf.variable_scope(name='loss') as scope:
+    loss = -tf.reduce_sum(label*tf.log(y)) + regular # cross entroy + L2-norm as the loss
+```
+[参考链接](https://www.cnblogs.com/wanghui-garcia/p/13384518.html)
+
+### Tensorflow加载多个模型
+
