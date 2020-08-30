@@ -42,4 +42,13 @@ def build_mode(features, mode, params,is_training):
 
 ### Tensorflow使用滑动平均来更新参数
 
+滑动平均可以看作是变量的过去一段时间取值的均值，相比对变量直接赋值而言，滑动平均得到的值在图像上更加平缓光滑，抖动性更小，不会因为某次的异常取值而使得滑动平均值波动很大.
+
+![tf.train.ExponentialMovingAverage](https://www.tensorflow.org/api_docs/python/tf/train/ExponentialMovingAverage)
+
+对于随机梯度下降而言，更平滑的更新说明不会偏离最优点很远；对于梯度下降 batch gradient decent，我感觉影子变量作用不大，因为梯度下降的方向已经是最优的了，loss 一定减小；对于 mini-batch gradient decent，可以尝试滑动平均，毕竟 mini-batch gradient decent 对参数的更新也存在抖动。
+
+
 ### 滑动平均为什么通常在测试过程中使用
+
+对神经网络边的权重 weights 使用滑动平均，得到对应的影子变量 shadow_weights。在训练过程仍然使用原来不带滑动平均的权重 weights，不然无法得到 weights 下一步更新的值，又怎么求下一步 weights 的影子变量 shadow_weights。之后在测试过程中使用 shadow_weights 来代替 weights 作为神经网络边的权重，这样在测试数据上效果更好
