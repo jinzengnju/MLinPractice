@@ -2,9 +2,7 @@
 
 假设有下面的数据：
 
-\begin{tabular}{|c|c|c|}
-\hline 2&9&4\\
-\hline 7&5&3\\
-\hline 6&1&8\\
-\hline
-\end{tabular}
+|label|price|gender|interest_series|
+|---|:---:|:---:|:---:|
+|0|50.32|male|mobile,basketball|
+|1|44.12|female|soap,perfume,mobile|
