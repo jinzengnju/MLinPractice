@@ -40,8 +40,13 @@ cat_features_indices = [i for i,c in enumerate(cols) if c in config.CATEGORICAL_
     行切片： df.loc['A':'G', :]
     
     列切片： df.loc[:, ['animal', 'age']]
+    
+- Series能用apply操作，如果要对dataframe df进行apply操作，可以通过df.apply(lambda row,function(row),aixs=1)
+
 
 ```python
+import pandas as pd
+
 #展示df的前3行
 df.iloc[:3]
 # 方法二
@@ -80,9 +85,32 @@ df.sort_values(by=['age', 'visits'], ascending=[False, True])
 
 #将priority列中的yes, no替换为布尔值True, False
 df['priority'] = df['priority'].map({'yes': True, 'no': False})
+
+#统计每列中null的个数
+NAs=pd.concat([train.isnull().sum(),test.isnull().sum()],axis=1,keys=['train','test'])
+NAs[NAs.sum(axis=1)>0]
 ```
 
 ### df进阶操作
+
+unstack操作与pivot操作：unstack()方法是针对索引或者标签的，即将列索引转成最内层的行索引；而pivot()方法则是针对列的值，即指定某列的值作为行索引，指定某列的值作为列索引，然后再指定哪些列作为索引对应的值。unstack()针对索引进行操作，pivot()针对值进行操作。更直观的，unstack是将某一列索引变为行索引，stack是将行索引变为列索引。
+
+```python
+data=pd.DataFrame(np.arange(6).reshape((2,3)),index=pd.Index(['street1','street2']),columns=pd.Index(['one','two','three']))
+data2=data.stack()
+#street1  one      0
+#         two      1
+#         three    2
+#street2  one      3
+#         two      4
+data3=data2.unstack()
+
+#         one  two  three
+#street1    0    1      2
+#street2    3    4      5
+```
+
+
 
 - 一个全数值DatraFrame，每个数字减去该行的平均数
     
@@ -179,5 +207,17 @@ delays = df['RecentDelays'].apply(pd.Series)
 delays.columns = ['delay_{}'.format(n) for n in range(1, len(delays.columns)+1)]
 df = df.drop('RecentDelays', axis=1).join(delays)
 ```
+
+### 可视化
+
+- 对目标变量的分布，查看label分布是否不均衡
+
+- 对numeric数据，boxplot箱线图绘制。查看是否偏态----如果偏态，需要转为正太
+
+- 对于坐标类数据，用scatter plot来查看分布
+
+- 对于分类问题，将数据根据不同类别着色
+
+- 绘制相关系数表
 
 

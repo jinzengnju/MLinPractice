@@ -197,7 +197,102 @@ saver.restore(...checkpoint filename...)
 
 [相关参考](./trainSaver/test.py)
 
+### SavedModel模型保存与检查点保存
+
+我们保存Tensorflow模型的时候，一般会有两种保存方式，上面已经讲了Saver方式保存检查点。接下来讲一下保存savedmodel文件与加载savedmodel文件。
+
+保存saved_model方法：
+
+- 从包含.meta文件的checkpoint恢复模型，并加载参数。保存为savedmodel文件
+
+- 自己重新定义一份模型结构，并从checkpoint恢复参数值。最后保存为savedmodel文件
+
+```python
+# -*- coding:UTF-8 -*-
+from __future__ import print_function
+
+import tensorflow as tf
+import io
+import yaml
+import argparse
+
+tf.compat.v1.disable_eager_execution()
+
+config_dict={}
+
+def read_config(config_path):
+    global config_dict
+    f=io.open(config_path,encoding='utf-8')
+    config_dict=yaml.load(f)
+
+def saveModel():
+  #load and build model
+  serialized_tf_example = tf.compat.v1.placeholder(dtype=tf.string,
+                                         shape=[None],
+                                         name='input_example_tensor')
+
+  #tfrecords协议处理serialized_tf_example得到输入数据data
+
+  #调用写好的model模块创建Model对象
+
+  outputs=tf.reshape(MODEL(data,False),[-1])
+
+  def write_saved_model(path, checkpoint_path, inputs, outputs):
+      saver = tf.compat.v1.train.Saver()
+      with tf.compat.v1.Session() as sess:
+          saver.restore(sess, checkpoint_path)
+          export_path = path
+          builder = tf.compat.v1.saved_model.builder.SavedModelBuilder(export_path)
+          tensor_info_x = tf.compat.v1.saved_model.utils.build_tensor_info(inputs)
+          tensor_info_y = tf.compat.v1.saved_model.utils.build_tensor_info(outputs)
+
+          prediction_signature = (
+              tf.compat.v1.saved_model.signature_def_utils.build_signature_def(
+                  inputs={'examples': tensor_info_x},
+                  outputs={'scores': tensor_info_y},
+                  method_name=tf.compat.v1.saved_model.signature_constants
+                      .PREDICT_METHOD_NAME))
+
+          builder.add_meta_graph_and_variables(
+              sess, [tf.compat.v1.saved_model.tag_constants.SERVING],
+              signature_def_map={
+                  tf.compat.v1.saved_model.signature_constants
+                      .DEFAULT_SERVING_SIGNATURE_DEF_KEY:
+                      prediction_signature,
+              }, )
+          builder.save()
+
+  checkpoint = tf.train.get_checkpoint_state(config_dict.get("checkpoint_path"))  
+  input_checkpoint = checkpoint.model_checkpoint_path  
+
+  write_saved_model(config_dict.get("export_model_dir"), input_checkpoint, serialized_tf_example, outputs)
+
+```
+
+- 使用savedmodel API保存模型
+
+saved模型加载
+
+- 需要注意的是，当你使用savedmodel API加载模型的时候，一定要开启eager模式。不能将高阶的savedmodel API与低阶的session API混用，否则会出现**无法初始化参数的问题**
+
+```Python
+from __future__ import print_function
+
+import tensorflow as tf
+
+import argparse
+
+# tf.compat.v1.disable_eager_execution()
+
+def loadModel():
+  MODEL = tf.saved_model.load("path")
+
+  out = MODEL.signatures["serving_default"](tf.constant([example1.SerializeToString(),example2.SerializeToString(),example3.SerializeToString(),example4.SerializeToString(),example5.SerializeToString()]))
+  print(out)
+```
+
 ### 滑动平均
+![](../MovingAverage/readme.md)
 
 ### collection机制
 
