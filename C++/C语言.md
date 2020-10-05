@@ -157,3 +157,114 @@ void write_extern(void)
    printf("count is %d\n", count);
 }
 ```
+
+### C函数
+
+函数定义与函数声明：函数定义需要写出完整的函数逻辑，函数声明即申明应该如何调用函数即可，即返回类型、函数参数类型。当您在一个源文件中定义函数且在另一个文件中调用函数时，函数声明是必须的。**这种情况下，应该在调用函数的文件顶部声明函数**
+
+```
+/* 函数定义，函数返回两个数中较大的那个数 */
+int max(int num1, int num2) 
+{
+   /* 局部变量声明 */
+   int result;
+   if (num1 > num2)
+      result = num1;
+   else
+      result = num2;
+   return result; 
+}
+
+int max(int num1, int num2);
+int max(int, int);
+
+```
+
+```
+#include <stdio.h>
+ 
+/* 函数声明 */
+int max(int num1, int num2);
+ 
+int main ()
+{
+   /* 局部变量定义 */
+   int a = 100;
+   int b = 200;
+   int ret;
+ 
+   /* 调用函数来获取最大值 */
+   ret = max(a, b);
+ 
+   printf( "Max value is : %d\n", ret );
+ 
+   return 0;
+}
+ 
+/* 函数返回两个数中较大的那个数 */
+int max(int num1, int num2) 
+{
+   /* 局部变量声明 */
+   int result;
+ 
+   if (num1 > num2)
+      result = num1;
+   else
+      result = num2;
+ 
+   return result; 
+}
+```
+
+- 函数参数：形式参数，是函数内部的局部变量，在进入函数时被创建，退出函数时被销毁。而在调用函数时，有两种向函数传递参数的方式：
+
+    - 传值调用：把参数的实际值复制给函数的形式参数。在这种情况下，修改函数内的形式参数不会影响实际参数。
+    
+    - 引用调用：通过指针传递方式，形参为指向实参地址的指针，当对形参的指向操作时，就相当于对实参本身进行的操作。这种方法有什么好处呢？**传递指针可以让多个函数访问指针所引用的对象，而不用把对象声明为全局可访问**
+```
+/* 函数定义 */
+void swap(int *x, int *y)
+{
+   int temp;
+   temp = *x;    /* 保存地址 x 的值 */
+   *x = *y;      /* 把 y 赋值给 x */
+   *y = temp;    /* 把 temp 赋值给 y */
+  
+   return;
+}
+
+#include <stdio.h>
+ 
+/* 函数声明 */
+void swap(int *x, int *y);
+ 
+int main ()
+{
+   /* 局部变量定义 */
+   int a = 100;
+   int b = 200;
+   printf("交换前，a 的值： %d\n", a );
+   printf("交换前，b 的值： %d\n", b );
+   /* 调用函数来交换值
+    * &a 表示指向 a 的指针，即变量 a 的地址
+    * &b 表示指向 b 的指针，即变量 b 的地址
+   */
+   swap(&a, &b);
+   printf("交换后，a 的值： %d\n", a );
+   printf("交换后，b 的值： %d\n", b );
+   return 0;
+}
+
+```
+
+### C作用域规则
+
+C语言中有三个地方可以声明变量：
+
+- 局部变量
+
+- 全局变量
+
+- 形式参数
+
+全局变量保存在内存的全局存储单元中，占用静态的存储单元；局部变量保存在栈中，**只有在所在函数被调用时才动态的为变量分配存储单元**
