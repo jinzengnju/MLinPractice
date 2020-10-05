@@ -1,6 +1,6 @@
 ### 集成学习
 
-之前已经从理论角度分析过集成学习算法族，见![集成学习算法](https://zhuanlan.zhihu.com/p/97200320)，以及LightGBM性能优化![LightGBM性能优化](https://zhuanlan.zhihu.com/p/102281499)。这次将从工程实践的角度来分析如何使用它们
+之前已经从理论角度分析过集成学习算法族，见[集成学习算法](https://zhuanlan.zhihu.com/p/97200320)，以及LightGBM性能优化[LightGBM性能优化](https://zhuanlan.zhihu.com/p/102281499)。这次将从工程实践的角度来分析如何使用它们
 
 ### 方差与偏差分析
 
