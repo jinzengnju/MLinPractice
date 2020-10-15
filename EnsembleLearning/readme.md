@@ -232,6 +232,102 @@ print(gsearch.cv_results_['mean_test_score'])
 print(gsearch.cv_results_['params'])
 ~~~
 
+
+
+### How to use early-stopping in GridSearch for lgb
+
+方法一：
+
+lgb.cv函数支持交叉验证并且早停，所以可以使用lgb.cv + GridSearch来进行调参。并且以下方法兼顾了不同初始参数可能会有不同的boost迭代次数的情况，是一种非常好的方法，个人比较推荐。
+
+~~~Python
+import lightgbm
+
+# Whatever dataset you have
+
+from sklearn.model_selection import train_test_split
+
+train, test = train_test_split( # with your dataset
+
+# Imagine now that you want to optimize num_leaves and
+# learning_rate, and also use early stopping:
+num_leaves_choices = [56, 128, 256]
+learning_rate_choices = [0.05, 0.1, 0.2]
+
+# We will store the cross validation results in a simple list,
+# with tuples in the form of (hyperparam dict, cv score):
+cv_results = []
+
+for num_lv in num_leaves_choices:
+    for lr in learning_rate_choices:
+        hyperparams = {"objective": # whatever,
+                                   "num_leaves": num_lv,
+                                   "learning_rate": lr,
+                                    # Other constant hyperparameters
+                                 }
+        validation_summary = lightgbm.cv(hyperparams,
+                                                                 train,
+                                                                 num_boost_round=4096, # any high number will do
+                                                                 nfold=10,
+                                                                 metrics=["auc"],
+                                                                 early_stopping_rounds=50, # Here it is
+                                                                 verbose_eval=10)
+        optimal_num_trees = len(validation_summary["auc-mean"])
+        # Let's just add the optimal number of trees (chosen by early stopping)
+        # to the hyperparameter dictionary:
+        hyperparams["optimal_number_of_trees"] = optimal_num_trees
+
+       # And we append results to cv_results:
+       cv_results.append((hyperparams, validation_summary["auc-mean"][-1]))
+~~~
+
+方法二：
+
+GridSearchCV支持传递早停参数
+
+~~~Python
+gbm = lgb.LGBMRegressor(n_jobs=-1)
+
+param_grid = {
+    "num_leaves" : np.linspace(10, 200, 4, dtype=np.int32),
+    'learning_rate': np.linspace(0.1, 1, 5),
+    'n_estimators': np.linspace(10, 1000, 5, dtype=np.int32),
+    'early_stopping_rounds' : [20],
+}
+
+gbm = GridSearchCV(gbm, param_grid, cv=3, scoring="neg_mean_squared_error", verbose=100, n_jobs=-1)
+gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], eval_metric="rmse")
+#fit_params={"early_stopping_rounds":42, 
+#            "eval_metric" : "mae", 
+#            "eval_set" : [[testX, testY]]}
+#gridsearch.fit(trainX, trainY, **fit_params)
+
+#fit_params={"early_stopping_rounds":42, 
+#            "eval_metric" : "mae", 
+#            "eval_set" : [[testX, testY]]}
+#model = xgb.XGBRegressor()
+#gridsearch = GridSearchCV(model, paramGrid, verbose=1 ,
+#         fit_params=fit_params,
+#         cv=TimeSeriesSplit(n_splits=cv).get_n_splits([trainX,trainY]))
+#gridsearch.fit(trainX,trainY)
+
+print('Best parameters:', gbm.best_params_)
+~~~
+
+
+
+### 错误整理
+
+* [LightGBM] [Warning] No further splits with positive gain, best gain: -inf
+
+  这意味着当前迭代中树的学习应该停止，因为不能再拆分。这可能是由于“min_child_samples”设置过大引起，可以将其设置为一个较小的值。或者也有可能是由于数据集合不容易学习，参数对应的模型太过简单，无法很好的学习数据。
+
+  'verbose' : -1#取消警告No further splits with positive gain, best gain: -inf，不设置为-1的话，数据量较少可能会提出警告
+
+* 如何调节max_bin
+
+  该参数可以直接传入lgb.cv的params函数内
+
 参考资料：
 
 1.[LightGBM调参](https://www.cnblogs.com/bjwu/p/9307344.html)
