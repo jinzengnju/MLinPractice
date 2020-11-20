@@ -22,7 +22,7 @@ train = optimizer.minimize(loss, name='train_step')
 # Remember output operation for later aplication
 # Adding it to a collections for easy acces
 # This is not required if you NAME your output operation
-# 记得将输出操作添加到一个集合中，但如何你命名了输出操作，这一步可以省略
+# 记得将输出操作添加到一个集合中，但如何你命名了输出操作，这一步可以省略.其中的activation为集合名字
 tf.add_to_collection("activation", linear_model)
 
 ## Start the session ##
