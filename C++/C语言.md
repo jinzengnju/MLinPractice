@@ -268,3 +268,71 @@ C语言中有三个地方可以声明变量：
 - 形式参数
 
 全局变量保存在内存的全局存储单元中，占用静态的存储单元；局部变量保存在栈中，**只有在所在函数被调用时才动态的为变量分配存储单元**
+
+### 指针
+
+![](/home/jin/git/MlinPractice/C++/pictures/1.png)
+
+* 定义指针变量：int  *p;
+* 把变量地址赋值给指针：p = &var_runoob
+* 访问指针变量中可用地址的值：指针指向的内存单元中的值为，*p=10
+
+#### NULL指针
+
+NULL 指针是一个定义在标准库中的值为零的常量
+
+~~~C
+#include <stdio.h>
+ 
+int main ()
+{
+   int  *ptr = NULL;
+ 
+   printf("ptr 的地址是 %p\n", ptr  );
+ 
+   return 0;
+}
+// ptr 的地址是 0x0
+~~~
+
+#### 指向指针的指针
+
+指针的指针声明：int **var;
+
+![](/home/jin/git/MlinPractice/C++/pictures/2.png)
+
+~~~C
+#include <stdio.h>
+ 
+int main ()
+{
+   int  V;
+   int  *Pt1;
+   int  **Pt2;
+ 
+   V = 100;
+ 
+   /* 获取 V 的地址 */
+   Pt1 = &V;
+ 
+   /* 使用运算符 & 获取 Pt1 的地址 */
+   Pt2 = &Pt1;
+ 
+   /* 使用 pptr 获取值 */
+   printf("var = %d\n", V );
+   printf("Pt1 = %p\n", Pt1 );
+   printf("*Pt1 = %d\n", *Pt1 );
+    printf("Pt2 = %p\n", Pt2 );
+   printf("**Pt2 = %d\n", **Pt2);
+ 
+   return 0;
+}
+
+//var = 100
+//Pt1 = 0x7ffee2d5e8d8
+//*Pt1 = 100
+//Pt2 = 0x7ffee2d5e8d0
+//**Pt2 = 100
+~~~
+
+指针的指针，如果要取对应存储单元的值时，需要使用两重*运算符
